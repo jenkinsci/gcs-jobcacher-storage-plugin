@@ -1,0 +1,12 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="${%GCS Bucket Name}" field="bucketName">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Base Prefix}" field="prefix">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%GCP Project ID}" field="projectId">
+        <f:textbox/>
+    </f:entry>
+</j:jelly>

@@ -1,0 +1,5 @@
+<?jelly escape-by-default='true'?>
+<div>
+    Extension of the Job Cacher plugin that adds Google Cloud Storage as a cache item storage
+    backend, authenticating with Application Default Credentials (Workload Identity on GKE).
+</div>

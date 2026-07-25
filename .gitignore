@@ -1,0 +1,9 @@
+target/
+work/
+*.iml
+.idea/
+.settings/
+.project
+.classpath
+.mvn/
+!.mvn/wrapper/maven-wrapper.properties

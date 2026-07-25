@@ -1,0 +1,7 @@
+unclassified:
+  globalItemStorage:
+    storage:
+      googleCloudStorage:
+        bucketName: "caches"
+        prefix: "the-prefix/"
+        projectId: "my-gcp-project"
