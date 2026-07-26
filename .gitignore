@@ -5,5 +5,3 @@ work/
 .settings/
 .project
 .classpath
-.mvn/
-!.mvn/wrapper/maven-wrapper.properties

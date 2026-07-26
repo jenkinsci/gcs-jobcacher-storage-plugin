@@ -39,6 +39,12 @@
     <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
     <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     <ban-deprecated-stapler.skip>false</ban-deprecated-stapler.skip>
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
+    <banObsoleteDependencyOverrides.skip>false</banObsoleteDependencyOverrides.skip>
+    <!-- The native GCS client (google-cloud-storage) pulls a large transitive tree (grpc, protobuf,
+         opentelemetry, ...). Declared explicitly so strictBundledArtifacts flags any future change.
+         Reducing this footprint / auditing for core classpath clashes is tracked before release. -->
+    <hpi.bundledArtifacts>animal-sniffer-annotations,annotations,api-common,auto-value-annotations,checker-qual,commons-codec,conscrypt-openjdk-uber,detector-resources-support,error_prone_annotations,exporter-metrics,failureaccess,gapic-google-cloud-storage-v2,gax,gax-grpc,gax-httpjson,google-api-client,google-api-services-storage,google-auth-library-credentials,google-auth-library-oauth2-http,google-cloud-core,google-cloud-core-grpc,google-cloud-core-http,google-cloud-monitoring,google-cloud-storage,google-http-client,google-http-client-apache-v2,google-http-client-appengine,google-http-client-gson,google-http-client-jackson2,google-oauth-client,grpc-alts,grpc-api,grpc-auth,grpc-context,grpc-core,grpc-google-cloud-storage-v2,grpc-googleapis,grpc-grpclb,grpc-inprocess,grpc-netty-shaded,grpc-opentelemetry,grpc-protobuf,grpc-protobuf-lite,grpc-rls,grpc-services,grpc-stub,grpc-util,grpc-xds,gson,guava,j2objc-annotations,jackson-core,javax.annotation-api,listenablefuture,opencensus-api,opencensus-contrib-http-util,opencensus-proto,opentelemetry-api,opentelemetry-api-incubator,opentelemetry-context,opentelemetry-gcp-resources,opentelemetry-sdk,opentelemetry-sdk-common,opentelemetry-sdk-extension-autoconfigure-spi,opentelemetry-sdk-logs,opentelemetry-sdk-metrics,opentelemetry-sdk-trace,opentelemetry-semconv,perfmark-api,proto-google-cloud-monitoring-v3,proto-google-cloud-storage-v2,proto-google-common-protos,proto-google-iam-v1,protobuf-java,protobuf-java-util,re2j,shared-resourcemapping,slf4j-api,threetenbp</hpi.bundledArtifacts>
     <google-cloud-libraries.version>26.49.0</google-cloud-libraries.version>
   </properties>
 
@@ -54,7 +60,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>6641.vfe1b_b_3c48a_4a_</version>
+        <version>6751.v745d6a_31066a_</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
