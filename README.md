@@ -101,7 +101,7 @@ resumable upload, existence check, download, rename on job move, and delete on j
 validation and JCasC round-tripping.
 
 The GCS client and ADC credentials come from the
-[`gcp-java-sdk-storage`](https://plugins.jenkins.io/gcp-java-sdk/) API plugin rather than a direct
+[`gcp-java-sdk-storage`](https://plugins.jenkins.io/gcp-java-sdk-storage/) API plugin rather than a direct
 `google-cloud-storage` dependency, so this plugin bundles no third-party jars of its own.
 
 Remaining follow-ups:
