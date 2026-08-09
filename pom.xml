@@ -41,7 +41,6 @@
     <ban-deprecated-stapler.skip>false</ban-deprecated-stapler.skip>
     <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
     <banObsoleteDependencyOverrides.skip>false</banObsoleteDependencyOverrides.skip>
-    <gcp-java-sdk.version>26.23.0-31.va_efec42c4f8c</gcp-java-sdk.version>
     <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
 
@@ -66,7 +65,6 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>gcp-java-sdk-storage</artifactId>
-      <version>${gcp-java-sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
