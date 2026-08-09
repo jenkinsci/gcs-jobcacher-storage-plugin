@@ -45,7 +45,12 @@ public class GCSProfile {
     private final String prefix;
 
     GCSProfile(String projectId, String bucketName, String prefix) {
-        this.helper = GCSClientHelper.fromApplicationDefault(projectId, bucketName);
+        this(GCSClientHelper.fromApplicationDefault(projectId, bucketName), prefix);
+    }
+
+    /** Injects a pre-built helper; used by tests to target a storage emulator. */
+    GCSProfile(GCSClientHelper helper, String prefix) {
+        this.helper = helper;
         this.prefix = prefix;
     }
 

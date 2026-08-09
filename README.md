@@ -85,17 +85,29 @@ gcloud storage buckets add-iam-policy-binding gs://my-jenkins-caches \
 ## Build
 
 ```bash
-mvn -ntp clean verify        # unit tests + spotless + CasC compatibility
+mvn -ntp clean verify        # unit tests + emulator tests + spotless + CasC compatibility
 mvn -ntp hpi:run             # run a local Jenkins with the plugin at http://localhost:8080/jenkins
 ```
 
+The emulator-backed tests need a Docker daemon. They are skipped automatically when none is
+available, so `mvn verify` still passes without one.
+
 ## Status
 
-Early skeleton. Known follow-ups:
+Working, and covered end-to-end. `GCSProfile` is exercised against the
+[`fake-gcs-server`](https://github.com/fsouza/fake-gcs-server) emulator over Testcontainers —
+resumable upload, existence check, download, rename on job move, and delete on job removal
+(including that a sibling job sharing a name prefix is not swept up). Unit tests cover cache-key
+validation and JCasC round-tripping.
 
-- Google client (`google-cloud-storage`) dependency convergence against the Jenkins core
-  classpath (guava/protobuf) may need `<exclusions>` or shading.
-- Integration test against a GCS emulator (`fake-gcs-server`) via Testcontainers.
+The GCS client and ADC credentials come from the
+[`gcp-java-sdk-storage`](https://plugins.jenkins.io/gcp-java-sdk/) API plugin rather than a direct
+`google-cloud-storage` dependency, so this plugin bundles no third-party jars of its own.
+
+Remaining follow-ups:
+
+- Object-prefix condition on the downscoped token's Credential Access Boundary (see
+  [Security notes](#security-notes--hardening-backlog)); needs verification against real GCP.
 - Optional resumable-download tuning / parallelism for large caches.
 
 ## License

@@ -29,6 +29,7 @@ import com.google.auth.oauth2.CredentialAccessBoundary;
 import com.google.auth.oauth2.CredentialAccessBoundary.AccessBoundaryRule;
 import com.google.auth.oauth2.DownscopedCredentials;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.NoCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
@@ -71,12 +72,17 @@ public class GCSClientHelper implements Serializable {
 
     private final long accessTokenExpiryEpochMilli;
 
+    // Storage endpoint override. Null in production, where the client targets the public GCS
+    // endpoint; set only by tests to point at a local emulator.
+    private final String host;
+
     private transient Storage storage;
 
-    private GCSClientHelper(String projectId, String accessToken, long accessTokenExpiryEpochMilli) {
+    private GCSClientHelper(String projectId, String accessToken, long accessTokenExpiryEpochMilli, String host) {
         this.projectId = projectId;
         this.accessToken = accessToken;
         this.accessTokenExpiryEpochMilli = accessTokenExpiryEpochMilli;
+        this.host = host;
     }
 
     /**
@@ -110,12 +116,27 @@ public class GCSClientHelper implements Serializable {
             // Could not mint a downscoped controller-side token; the agent will attempt its own ADC.
             LOGGER.log(Level.FINE, "Could not mint a downscoped GCS token on the controller", e);
         }
-        return new GCSClientHelper(projectId, token, expiry);
+        return new GCSClientHelper(projectId, token, expiry, null);
+    }
+
+    /**
+     * Build a helper targeting a storage emulator rather than the public GCS endpoint. Test-only:
+     * an emulator authenticates nothing, so ADC resolution is skipped entirely.
+     *
+     * @param host emulator base URL, e.g. {@code http://localhost:4443}
+     */
+    static GCSClientHelper forHost(String host) {
+        return new GCSClientHelper("test-project", null, 0L, host);
     }
 
     synchronized Storage storage() {
         if (storage == null) {
-            StorageOptions.Builder builder = StorageOptions.newBuilder().setCredentials(resolveCredentials());
+            StorageOptions.Builder builder = StorageOptions.newBuilder();
+            if (host != null) {
+                builder.setHost(host).setCredentials(NoCredentials.getInstance());
+            } else {
+                builder.setCredentials(resolveCredentials());
+            }
             if (projectId != null && !projectId.isBlank()) {
                 builder.setProjectId(projectId);
             }
