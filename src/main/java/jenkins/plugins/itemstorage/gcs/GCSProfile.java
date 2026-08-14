@@ -42,25 +42,44 @@ import java.util.List;
 public class GCSProfile {
 
     private final GCSClientHelper helper;
+    private final String projectId;
+    private final String bucketName;
     private final String prefix;
 
     GCSProfile(String projectId, String bucketName, String prefix) {
-        this(GCSClientHelper.fromApplicationDefault(projectId, bucketName), prefix);
+        // Controller-side metadata operations use ADC directly. A profile outlives the moment it was
+        // created — jobcacher builds it when a cache step opens and reuses it to check for an
+        // existing cache when the step closes — so it must hold a credential that can refresh.
+        this.helper = GCSClientHelper.usingApplicationDefault(projectId);
+        this.projectId = projectId;
+        this.bucketName = bucketName;
+        this.prefix = prefix;
     }
 
     /** Injects a pre-built helper; used by tests to target a storage emulator. */
     GCSProfile(GCSClientHelper helper, String prefix) {
         this.helper = helper;
+        this.projectId = null;
+        this.bucketName = null;
         this.prefix = prefix;
     }
 
+    /**
+     * Helper for a transfer that runs on the agent, carrying a token minted now rather than when
+     * this profile was built. The emulator-backed test profile has no bucket to downscope to and
+     * authenticates nothing, so it reuses the injected helper.
+     */
+    private GCSClientHelper transferHelper() {
+        return bucketName == null ? helper : GCSClientHelper.mintDownscoped(projectId, bucketName);
+    }
+
     public void upload(String bucketName, String objectName, FilePath source) throws IOException, InterruptedException {
-        source.act(new GCSUploadCallable(helper, bucketName, withPrefix(objectName)));
+        source.act(new GCSUploadCallable(transferHelper(), bucketName, withPrefix(objectName)));
     }
 
     public void download(String bucketName, String objectName, FilePath target)
             throws IOException, InterruptedException {
-        target.act(new GCSDownloadCallable(helper, bucketName, withPrefix(objectName)));
+        target.act(new GCSDownloadCallable(transferHelper(), bucketName, withPrefix(objectName)));
     }
 
     public boolean exists(String bucketName, String objectName) {
