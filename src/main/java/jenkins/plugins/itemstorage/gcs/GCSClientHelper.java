@@ -62,6 +62,10 @@ public class GCSClientHelper implements Serializable {
     private static final String STORAGE_SCOPE = "https://www.googleapis.com/auth/devstorage.read_write";
     private static final String CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
+    // Treat a shipped token as spent slightly before its stated expiry, so a transfer that is about
+    // to start does not race the clock.
+    private static final long EXPIRY_SKEW_MILLIS = 60_000L;
+
     private final String projectId;
 
     // Short-lived OAuth access token minted on the controller and shipped to the agent over the
@@ -86,12 +90,29 @@ public class GCSClientHelper implements Serializable {
     }
 
     /**
-     * Build a helper on the controller, eagerly minting a bucket-scoped token to ship to the agent.
+     * Build a helper that resolves ADC on the node it runs on. Used for the controller-side metadata
+     * operations, which must keep working for the whole life of a build: ADC refreshes itself, while
+     * a minted token does not (see {@link #mintDownscoped}).
+     *
+     * @param projectId optional GCP project id; inferred from ADC/metadata when blank
+     */
+    static GCSClientHelper usingApplicationDefault(String projectId) {
+        return new GCSClientHelper(projectId, null, 0L, null);
+    }
+
+    /**
+     * Build a helper carrying a freshly minted bucket-scoped token to ship to the agent.
+     *
+     * <p>Mint this as late as possible — immediately before the transfer that uses it. The token
+     * cannot be refreshed once minted, and a {@link DownscopedCredentials} token cannot outlive the
+     * source credential it was derived from, so it inherits only the <em>remaining</em> lifetime of
+     * the controller's own ADC token. Minting early (e.g. when a cache step opens) can therefore
+     * hand the agent a token with seconds left on it.
      *
      * @param projectId optional GCP project id; inferred from ADC/metadata when blank
      * @param bucketName bucket the shipped token is downscoped to
      */
-    static GCSClientHelper fromApplicationDefault(String projectId, String bucketName) {
+    static GCSClientHelper mintDownscoped(String projectId, String bucketName) {
         String token = null;
         long expiry = 0L;
         try {
@@ -129,6 +150,11 @@ public class GCSClientHelper implements Serializable {
         return new GCSClientHelper("test-project", null, 0L, host);
     }
 
+    /** Builds a helper around an already-minted token, as an agent receives it. Test seam. */
+    static GCSClientHelper withShippedToken(String projectId, String accessToken, long expiryEpochMilli) {
+        return new GCSClientHelper(projectId, accessToken, expiryEpochMilli, null);
+    }
+
     synchronized Storage storage() {
         if (storage == null) {
             StorageOptions.Builder builder = StorageOptions.newBuilder();
@@ -145,10 +171,29 @@ public class GCSClientHelper implements Serializable {
         return storage;
     }
 
+    /**
+     * A shipped token is a fixed value that cannot be refreshed: asking the library to refresh one
+     * throws {@code IllegalStateException} rather than minting a replacement. Treat an expired token
+     * as absent so the node falls back to its own ADC instead of failing the build on a credential
+     * it can never renew.
+     */
+    boolean shippedTokenUsable() {
+        if (accessToken == null) {
+            return false;
+        }
+        if (accessTokenExpiryEpochMilli <= 0) {
+            return true;
+        }
+        return System.currentTimeMillis() < accessTokenExpiryEpochMilli - EXPIRY_SKEW_MILLIS;
+    }
+
     private GoogleCredentials resolveCredentials() {
-        if (accessToken != null) {
+        if (shippedTokenUsable()) {
             Date expiry = accessTokenExpiryEpochMilli > 0 ? new Date(accessTokenExpiryEpochMilli) : null;
             return GoogleCredentials.create(new AccessToken(accessToken, expiry));
+        }
+        if (accessToken != null) {
+            LOGGER.log(Level.FINE, "Shipped GCS token expired before use; falling back to this node's ADC");
         }
         try {
             return GoogleCredentials.getApplicationDefault().createScoped(STORAGE_SCOPE);
