@@ -24,10 +24,15 @@
 
 package jenkins.plugins.itemstorage.gcs;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -58,6 +63,14 @@ class GCSClientHelperTest {
         // Expires shortly: a transfer starting now would race the clock, so treat it as spent.
         GCSClientHelper helper = GCSClientHelper.withShippedToken("p", "token", inMillis(Duration.ofSeconds(5)));
         assertFalse(helper.shippedTokenUsable());
+    }
+
+    @Test
+    void usableTokenIsSentEvenInsideTheLibraryDefaultMargin() throws IOException {
+        GCSClientHelper helper = GCSClientHelper.withShippedToken("p", "token", inMillis(Duration.ofMinutes(2)));
+        Map<String, List<String>> headers =
+                helper.resolveCredentials().getRequestMetadata(URI.create("https://storage.googleapis.com/"));
+        assertEquals(List.of("Bearer token"), headers.get("Authorization"));
     }
 
     @Test

@@ -29,11 +29,13 @@ import com.google.auth.oauth2.CredentialAccessBoundary;
 import com.google.auth.oauth2.CredentialAccessBoundary.AccessBoundaryRule;
 import com.google.auth.oauth2.DownscopedCredentials;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.NoCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -187,10 +189,14 @@ public class GCSClientHelper implements Serializable {
         return System.currentTimeMillis() < accessTokenExpiryEpochMilli - EXPIRY_SKEW_MILLIS;
     }
 
-    private GoogleCredentials resolveCredentials() {
+    OAuth2Credentials resolveCredentials() {
         if (shippedTokenUsable()) {
             Date expiry = accessTokenExpiryEpochMilli > 0 ? new Date(accessTokenExpiryEpochMilli) : null;
-            return GoogleCredentials.create(new AccessToken(accessToken, expiry));
+            return OAuth2Credentials.newBuilder()
+                    .setAccessToken(new AccessToken(accessToken, expiry))
+                    .setRefreshMargin(Duration.ZERO)
+                    .setExpirationMargin(Duration.ZERO)
+                    .build();
         }
         if (accessToken != null) {
             LOGGER.log(Level.FINE, "Shipped GCS token expired before use; falling back to this node's ADC");
